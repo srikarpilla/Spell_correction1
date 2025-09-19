@@ -6,7 +6,7 @@ import os
 
 app = Flask(__name__)
 
-# Load reference words once
+# Load reference words once at startup
 def load_reference_words(filename="reference.txt"):
     with open(filename, "r", encoding="utf-8") as f:
         return [line.strip() for line in f if line.strip()]
@@ -24,8 +24,11 @@ def normalize(word):
 def build_phonetic_maps(words):
     phonetic_maps = {'soundex': {}, 'metaphone': {}}
     for word in words:
-        s_code = phonetics.soundex(normalize(word))
-        m_code = phonetics.metaphone(normalize(word))
+        norm_word = normalize(word)
+        if not norm_word:
+            continue
+        s_code = phonetics.soundex(norm_word)
+        m_code = phonetics.metaphone(norm_word)
         phonetic_maps['soundex'].setdefault(s_code, []).append(word)
         phonetic_maps['metaphone'].setdefault(m_code, []).append(word)
     return phonetic_maps
@@ -44,15 +47,18 @@ def correct_word(word, phonetic_maps, reference_words, threshold=75):
     if not word or word.strip() == "":
         return word
 
-    s_code = phonetics.soundex(normalize(word))
-    m_code = phonetics.metaphone(normalize(word))
+    word_norm = normalize(word)
+    if not word_norm:
+        return word
+
+    s_code = phonetics.soundex(word_norm)
+    m_code = phonetics.metaphone(word_norm)
     candidates = set(phonetic_maps['soundex'].get(s_code, []) + phonetic_maps['metaphone'].get(m_code, [])) or set(reference_words)
 
     scores = []
-    word_norm = normalize(word)
     for cand in candidates:
         cand_norm = normalize(cand)
-        if cand_norm and word_norm:
+        if cand_norm:
             sim = combined_similarity(word_norm, cand_norm)
             scores.append((cand, sim))
 
