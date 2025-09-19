@@ -1,0 +1,4 @@
+Flask
+phonetics
+rapidfuzz
+gunicorn

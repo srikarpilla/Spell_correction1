@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Spell Correction Tool</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Roboto', sans-serif;
+            background-image: url('https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1350&q=80');
+            background-size: cover;
+            background-position: center;
+            height: 100vh;
+            color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: rgba(0,0,0,0.7);
+            padding: 40px 60px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.4);
+            max-width: 800px;
+            width: 90%;
+        }
+
+        h1 {
+            margin-bottom: 30px;
+            font-weight: 700;
+            text-align: center;
+            letter-spacing: 2px;
+            font-size: 2.5rem;
+            color: #ffc107;
+            text-shadow: 1px 1px 5px rgba(0,0,0,0.8);
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        label {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+
+        input[type="file"] {
+            padding: 10px;
+            border-radius: 6px;
+            border: none;
+            margin-bottom: 20px;
+            width: 300px;
+        }
+
+        button {
+            background-color: #ffc107;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: background-color 0.3s ease;
+            width: 200px;
+        }
+
+        button:hover {
+            background-color: #ffca28;
+        }
+
+        table {
+            margin-top: 45px;
+            width: 100%;
+            border-collapse: collapse;
+            color: #fff;
+        }
+
+        th, td {
+            padding: 10px 15px;
+            border-bottom: 1px solid #444;
+            text-align: left;
+        }
+
+        th {
+            background-color: #263238;
+            font-weight: 700;
+        }
+
+        tbody tr:hover {
+            background-color: rgba(255, 193, 7, 0.2);
+        }
+
+        .footer {
+            margin-top: 30px;
+            font-size: 0.9rem;
+            color: #bbb;
+            text-align: center;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px 30px;
+            }
+
+            input[type="file"] {
+                width: 100%;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Spell Correction for Transliteration Errors</h1>
+        <form method="POST" enctype="multipart/form-data">
+            <label for="error_file">Upload Errors File (.txt)</label>
+            <input type="file" id="error_file" name="error_file" accept=".txt" required />
+            <button type="submit">Correct Spellings</button>
+        </form>
+
+        {% if results %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Original Word</th>
+                    <th>Corrected Word</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for error, corrected in results %}
+                <tr>
+                    <td>{{ error }}</td>
+                    <td>{{ corrected }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+        <div class="footer">
+            &copy; 2025 Spell Correction Project
+        </div>
+    </div>
+</body>
+</html>
