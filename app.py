@@ -1,14 +1,10 @@
-from flask import Flask, render_template, request, send_file
+from flask import Flask, render_template, request
 import phonetics
 from rapidfuzz import fuzz
 import re
 import os
 
 app = Flask(__name__)
-app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['OUTPUT_FOLDER'] = 'outputs'
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-os.makedirs(app.config['OUTPUT_FOLDER'], exist_ok=True)
 
 # Load reference words once
 def load_reference_words(filename="reference.txt"):
@@ -18,10 +14,12 @@ def load_reference_words(filename="reference.txt"):
 reference_words = load_reference_words()
 
 def normalize(word):
-    if not word:
+    if not word or not isinstance(word, str):
         return ""
-    word = re.sub(r'[^a-zA-Z]', '', word).lower()
-    return re.sub(r'(a+|e+|i+|o+|u+)', lambda m: m.group(0)[0], word)
+    word_clean = re.sub(r'[^a-zA-Z]', '', word)
+    if not word_clean:
+        return ""
+    return re.sub(r'(a+|e+|i+|o+|u+)', lambda m: m.group(0)[0], word_clean.lower())
 
 def build_phonetic_maps(words):
     phonetic_maps = {'soundex': {}, 'metaphone': {}}
@@ -51,9 +49,11 @@ def correct_word(word, phonetic_maps, reference_words, threshold=75):
     candidates = set(phonetic_maps['soundex'].get(s_code, []) + phonetic_maps['metaphone'].get(m_code, [])) or set(reference_words)
 
     scores = []
+    word_norm = normalize(word)
     for cand in candidates:
-        if cand:
-            sim = combined_similarity(normalize(word), normalize(cand))
+        cand_norm = normalize(cand)
+        if cand_norm and word_norm:
+            sim = combined_similarity(word_norm, cand_norm)
             scores.append((cand, sim))
 
     if not scores:
@@ -69,36 +69,13 @@ def correct_word(word, phonetic_maps, reference_words, threshold=75):
 @app.route("/", methods=["GET", "POST"])
 def index():
     corrected_pairs = []
-    output_filepath = None
     if request.method == "POST":
         file = request.files.get("error_file")
         if file and file.filename.endswith(".txt"):
-            input_path = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
-            file.save(input_path)
+            error_words = [line.strip() for line in file if line.strip()]
+            corrected_pairs = [(ew, correct_word(ew, phonetic_maps, reference_words)) for ew in error_words]
 
-            corrected_pairs = []
-            output_path = os.path.join(app.config['OUTPUT_FOLDER'], "output_corrected.txt")
-            with open(input_path, "r", encoding="utf-8") as f_in, \
-                 open(output_path, "w", encoding="utf-8") as f_out:
-
-                f_out.write("File_Error Corrected\n")
-                for err_word in f_in:
-                    err_word = err_word.strip()
-                    corr = correct_word(err_word, phonetic_maps, reference_words)
-                    corrected_pairs.append((err_word, corr))
-                    f_out.write(f"{err_word} {corr}\n")
-
-            output_filepath = output_path
-
-    return render_template("index.html", results=corrected_pairs, output_file=output_filepath)
-
-@app.route("/download")
-def download():
-    output_path = os.path.join(app.config['OUTPUT_FOLDER'], "output_corrected.txt")
-    if os.path.exists(output_path):
-        return send_file(output_path, as_attachment=True, download_name="output_corrected.txt")
-    else:
-        return "File not found", 404
+    return render_template("index.html", results=corrected_pairs)
 
 if __name__ == "__main__":
     import os
